@@ -9,10 +9,10 @@
 # Licence:     <your licence>
 #-------------------------------------------------------------------------------
 # -*- coding: utf-8 -*-
-from lib.mysql_custom import MySQLDB
+from py_mysql.mysql_custom import MySQLDB
 from getpass import getpass
-from lib import msg_abstract
-from lib import delete_null_row
+from py_mysql import msg_abstract
+from py_mysql import delete_null_row
 import sys
 import argparse
 import mysql.connector

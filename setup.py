@@ -11,15 +11,22 @@ with open('README.rst') as f:
 with open('LICENSE') as f:
     license = f.read()
 
+requires = ['mysql-connector-python']
+
 setup(
-    name='sample',
-    version='0.1.0',
-    description='Sample package for Python-Guide.org',
+    name='py_mysql',
+    version='1.0',
+    description='Operating Mysql for Python.',
     long_description=readme,
-    author='Kenneth Reitz',
-    author_email='me@kennethreitz.com',
-    url='https://github.com/kennethreitz/samplemod',
-    license=license,
-    packages=find_packages(exclude=('tests', 'docs'))
+    author='Takeki Shikano',
+    author_email='shikano.takeki@nexon.co.jp',
+    url=None,
+    license='MIT',
+    packages=find_packages(exclude=('tests', 'docs')),
+    install_requires=requires,
+    entry_points={
+        'console_scripts': ['pysql=py_mysql.execute_queries:global_entry_point'
+        ],
+    },
 )
 
