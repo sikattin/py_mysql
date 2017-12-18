@@ -293,11 +293,13 @@ def global_entry_point(self):
 if __name__ == '__main__':
     argparser = argparse.ArgumentParser(description='クエリ実行用スクリプト')
     argparser.add_argument('--hostname', metavar='<HOSTNAME>', type=str, required=False,
-                            default='127.0.0.1', help='接続対象となるホスト/IPを指定.')
+                            default='127.0.0.1', help='The host name or IP address of the MySQL server.')
     argparser.add_argument('-d', '--database', metavar='<DATABASE>', type=str,
-                            required=True, help='接続先のデータベース名を指定.')
+                            required=True, help='The database name to use when connecting with the MySQL server.')
     argparser.add_argument('-u', '--user', metavar='<USER>', type=str, required=True,
-                            help='接続するユーザ.')
+                            help='The user name used to authenticate with the MySQL server.')
+    argparser.add_argument('-P', '--port', metavar='<PORT>', type=int, required=False,
+                            help='The TCP/IP port of the MySQL server. Must be an integer.')
 
     args = argparser.parse_args()
 

@@ -16,7 +16,7 @@ from getpass import getpass
 
 class MySQLDB(object):
     """MySQL謹製のmysql-connector-pythonのラッパークラス"""
-    def __init__(self, host:str, dst_db: str, myuser: str, mypass: str):
+    def __init__(self, host:str, dst_db: str, myuser: str, mypass: str, port: int):
         """コンストラクタ.
 
         各種初期化を行う.
@@ -29,11 +29,12 @@ class MySQLDB(object):
         self.dst_db = dst_db
         self.myuser = myuser
         self.mypass = mypass
+        self.port = port
         self._conn = None
         self._cur = None
 
         # 初期化時にDBに接続する.
-        self.connect(self.host, self.dst_db, self.myuser, self.mypass)
+        self.connect(self.host, self.dst_db, self.myuser, self.mypass, self.port)
 
     def __enter__(self):
         """コンテキストマネージャ実装のため."""
@@ -51,7 +52,7 @@ class MySQLDB(object):
         if not self.is_connect:
             print("DB接続をクローズしました。")
 
-    def connect(self, host: str, dest_db: str, myuser: str, mypass: str):
+    def connect(self, host: str, dest_db: str, myuser: str, mypass: str, port:int):
         """MySQL接続用関数.
 
         """
@@ -59,17 +60,20 @@ class MySQLDB(object):
             self._conn = mysql.connector.connect(user=self.myuser,
                 password=self.mypass,
                 database=self.dst_db,
-                host=self.host)
+                host=self.host,
+                port=self.port)
         except mysql.connector.errors.ProgrammingError as e1:
             print("正確なアカウント情報、DB名を指定してください。")
             hostname = input("hostname: ")
             username = input("user: ")
             password = getpass()
             database = input("destination_db: ")
+            port_num = input("Port: ")
             self._conn = mysql.connector.connect(user=username,
                     password=password,
                     database=database,
-                    host=hostname)
+                    host=hostname,
+                    port=port_num)
         else:
             if self._conn.is_connected():
                 print("DB名：{} への接続成功.".format(self.dst_db))
@@ -122,7 +126,7 @@ class MySQLDB(object):
         :param params: 割り当て用のパラメータ 要タプル型"""
         # 接続確認
         if not self.is_connect:
-            self.connect(self.host, self.dst_db, self.myuser, self.mypass)
+            self.connect(self.host, self.dst_db, self.myuser, self.mypass, self.port)
         try:
             cur = self.get_cursor()
             if params is None:
