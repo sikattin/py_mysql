@@ -25,7 +25,7 @@ setup(
     packages=find_packages(exclude=('tests', 'docs')),
     install_requires=requires,
     entry_points={
-        'console_scripts': ['pysql=py_mysql.execute_queries:global_entry_point'
+        'console_scripts': ['pysql=py_mysql.Scripts.execute_queries:global_entry_point'
         ],
     },
 )
