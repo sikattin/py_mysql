@@ -48,6 +48,7 @@ class MySQLDB(object):
         :param exc_val:
         :param exc_tb:
         """
+        self.commit()
         self.close()
         if not self.is_connect:
             print("DB接続をクローズしました。")
