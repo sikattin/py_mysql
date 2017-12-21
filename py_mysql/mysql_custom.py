@@ -93,10 +93,12 @@ class MySQLDB(object):
     def commit(self):
         """接続しているデータベースへのコミットを行う."""
         self._conn.commit()
+        print("コミットしました。\n")
 
     def rollback(self):
         """トランザクション処理をロールバックする."""
         self._conn.rollback()
+        print("ロールバックしました。\n")
 
     def fetchone(self):
         """カーソルから次の1レコードを取得する.
