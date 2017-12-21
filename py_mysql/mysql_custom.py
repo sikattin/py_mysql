@@ -29,7 +29,7 @@ class MySQLDB(object):
         self.dst_db = dst_db
         self.myuser = myuser
         self.mypass = mypass
-        self.port = port
+        self.port = int(port)
         self._conn = None
         self._cur = None
 
@@ -48,7 +48,6 @@ class MySQLDB(object):
         :param exc_val:
         :param exc_tb:
         """
-        self.commit()
         self.close()
         if not self.is_connect:
             print("DB接続をクローズしました。")
@@ -93,7 +92,7 @@ class MySQLDB(object):
     def commit(self):
         """接続しているデータベースへのコミットを行う."""
         self._conn.commit()
-        print("コミットしました。\n")
+        print("これまでの更新をコミットしました。\n")
 
     def rollback(self):
         """トランザクション処理をロールバックする."""

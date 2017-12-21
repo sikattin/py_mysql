@@ -24,7 +24,7 @@ class ExcSql(object):
     このクラスの説明.
     """
 
-    def __init__(self, host: str, dst_db: str, myuser: str, mypass):
+    def __init__(self, host: str, dst_db: str, myuser: str, mypass, port: int):
         """コンストラクタ.
 
         Args:
@@ -37,6 +37,7 @@ class ExcSql(object):
         self.dst_db = dst_db
         self.myuser = myuser
         self.mypass = mypass
+        self.port = port
 
         self.msg1 = msg_abstract.Msg1()
         self.msg2 = msg_abstract.Msg2()
@@ -68,7 +69,7 @@ class ExcSql(object):
         err_cnt = 0
         # エラー発生命令を格納しておくタプル.
         err_list = tuple()
-        with MySQLDB(self.host, self.dst_db, self.myuser, self.mypass) as mysqldb:
+        with MySQLDB(self.host, self.dst_db, self.myuser, self.mypass, self.port) as mysqldb:
             # ファイルオープン検査.
             dir_path, w_encoding = self._read_io_file(mode='r')
             # SQL文をファイルから読み込む.
@@ -84,7 +85,6 @@ class ExcSql(object):
                     ans = self._input_int_answer(self.msg15)
                     if not self._judge_whether_commit(ans):
                         mysqldb.rollback()
-                        print("ロールバックしました。\n")
                         continue
                 # SQL文の実行.
                 try:
@@ -104,6 +104,9 @@ class ExcSql(object):
                     else:
                         print("プログラムを終了します。\n")
                         raise
+            # Connector/Python経由での接続はデフォルトでオートコミットがオフ
+            # なのですべての命令文が正常終了した場合は明示的にコミットさせる.
+            mysqldb.commit()
 
         print(__file__ + ' is ended.')
 
@@ -299,12 +302,13 @@ if __name__ == '__main__':
     argparser.add_argument('-u', '--user', metavar='<USER>', type=str, required=True,
                             help='The user name used to authenticate with the MySQL server.')
     argparser.add_argument('-P', '--port', metavar='<PORT>', type=int, required=False,
-                            help='The TCP/IP port of the MySQL server. Must be an integer.')
+                            default='3306',
+                            help='The TCP/IP port of the MySQL server. default is 3306. Must be an integer.')
 
     args = argparser.parse_args()
 
     password = getpass("{} ユーザのパスワード: ".format(args.user))
 
     excsql = ExcSql(host=args.hostname, dst_db=args.database,
-    myuser=args.user, mypass=password)
+    myuser=args.user, mypass=password, port=args.port)
     excsql.exc_sql()

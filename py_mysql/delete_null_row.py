@@ -43,7 +43,7 @@ class DeleteNullRow:
                 for line in file:
                     if line in {'\n', '\r', '\r\n' }:
                         continue
-                    elif self.is_matched(line=line, search_obj=["^-+", "^#+"]):
+                    elif self.is_matched(line=line, search_objs=["^-+", "^#+"]):
                         continue
                     else:
                         joined_strs = self.join_lines(line)
@@ -85,7 +85,7 @@ class DeleteNullRow:
         Returns:
             パターンにマッチしたならTrue そうでないならFalseを返す.
         """
-        for search_objs in search_obj:
+        for search_obj in search_objs:
             match_obj = re.match(r'{}'.format(search_obj), line)
             if match_obj is not None:
                 return True
