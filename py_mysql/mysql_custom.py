@@ -124,6 +124,14 @@ class MySQLDB(object):
         """カーソルを取得する."""
         return self._cur
 
+    def change_database(self, db: str):
+        """接続先のデータベースを変更する."""
+        self._conn.database = db
+
+    def get_statement(self):
+        """returns the last executed statement as a string."""
+        return self._cur.statement
+
     def execute_sql(self, sql: str, params=None):
         """SQL文の実行をする.
 
