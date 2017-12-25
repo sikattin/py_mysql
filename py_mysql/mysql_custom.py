@@ -29,7 +29,7 @@ class MySQLDB(object):
         self.dst_db = dst_db
         self.myuser = myuser
         self.mypass = mypass
-        self.port = int(port)
+        self.port = port
         self._conn = None
         self._cur = None
 
@@ -74,6 +74,9 @@ class MySQLDB(object):
                     database=database,
                     host=hostname,
                     port=port_num)
+            if self._conn.is_connected():
+                self._cur = self._conn.cursor()
+                return self
         else:
             if self._conn.is_connected():
                 print("DB名：{} への接続成功.".format(self.dst_db))
@@ -156,3 +159,13 @@ class MySQLDB(object):
         """
         return self._conn.in_transaction()
 
+    def escape_statement(self, sql: str):
+        """引数で渡された文字列をエスケープして返す.
+
+            Args:
+                param1 sql: execution command.
+
+            Returns:
+                String escaped.
+        """
+        return self._conn.converter.escape(sql)
