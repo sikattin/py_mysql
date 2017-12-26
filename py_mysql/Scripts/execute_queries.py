@@ -13,6 +13,7 @@ from py_mysql.mysql_custom import MySQLDB
 from getpass import getpass
 from py_mysql import msg_abstract
 from py_mysql import delete_null_row
+from mysql.connector import errorcode
 import sys
 import argparse
 import mysql.connector
@@ -77,7 +78,7 @@ class ExcSql(object):
             # 読み込んだ結果を実行する.
             for sql in sqls:
                 # エスケープ処理
-                sql = mysqldb.escape_statement(sql)
+                sql_escape = mysqldb.escape_statement(sql)
                 # トランザクション状態を管理.
                 # トランザクション中 かつ COMMIT を実行する前に確認処理に移る.
                 if mysqldb.is_transacted and 'COMMIT' in sql.upper():
@@ -90,16 +91,27 @@ class ExcSql(object):
                         continue
                 # SQL文の実行.
                 try:
-                    print("実行したSQL文: {}".format(sql))
-                    query_result = mysqldb.execute_sql(sql)
+                    print("実行したSQL文: {}".format(sql_escape))
+                    query_result = mysqldb.execute_sql(sql_escape)
+                except mysql.connector.ProgrammingError as err:
+                    self._error_process(err, sql_escape)
+                    if err.errno == errorcode.ER_SYNTAX_ERROR:
+                        print("***Check your syntax!! reexecute non escaped statement.***")
+                        try:
+                            print("実行したSQL文: {}".format(sql))
+                            mysqldb.execute_sql(sql)
+                        except mysql.connector.Error as err1:
+                            self._error_process(err1, sql)
+                    ans = self._input_int_answer(self.msg17)
+                    if ans == 1:
+                        continue
+                    else:
+                        print("プログラムを終了します。\n")
+                        raise
                 except mysql.connector.Error as e:
                     err_cnt += 1
-                    err_list += ("{0}件目: {1}".format(err_cnt, sql),)
-                    print("\n==========================================\n")
-                    print("実行した命令でエラーを検出しました。")
-                    print("エラーが発生した命令: {}\n".format(sql))
-                    print("Error: {}".format(e))
-                    print("\n==========================================\n")
+                    err_list += ("{0}件目: {1}".format(err_cnt, sql_escape),)
+                    self._error_process(e, sql_escape)
                     ans = self._input_int_answer(self.msg17)
                     if ans == 1:
                         continue
@@ -111,6 +123,21 @@ class ExcSql(object):
             mysqldb.commit()
 
         print(__file__ + ' is ended.')
+
+    def _error_process(self, error, sql: str):
+        """エラー発生時のメッセージ群.
+
+            Args:
+                param1 error: mysql.connector.Error,
+                param2 sql: sql statement.
+
+            Returns:
+        """
+        print("\n==========================================\n")
+        print("実行した命令でエラーを検出しました。")
+        print("エラーが発生した命令: {}\n".format(sql))
+        print("Error: {}".format(error))
+        print("\n==========================================\n")
 
     def _confirm_before_commit(self, mysqldb: MySQLDB,
                                 dnr: delete_null_row.DeleteNullRow):

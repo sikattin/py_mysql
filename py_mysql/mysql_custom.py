@@ -11,6 +11,7 @@
 #-------------------------------------------------------------------------------
 # -*- coding: utf-8 -*-
 import mysql.connector
+from py_mysql.delete_null_row import DeleteNullRow
 from getpass import getpass
 
 
@@ -25,6 +26,7 @@ class MySQLDB(object):
         :param myuser: 接続するユーザー名.
         :param mypass: 接続するユーザのパスワード.
         """
+        self.dnr = DeleteNullRow()
         self.host = host
         self.dst_db = dst_db
         self.myuser = myuser
@@ -176,4 +178,44 @@ class MySQLDB(object):
             Returns:
                 String escaped.
         """
-        return self._conn.converter.escape(sql)
+        # 新しいリストを用意.
+        list_escaped = list()
+        # 文字列を単語単位で区切る.
+        split_statement = sql.split()
+        # シングルクォーテーションまたはダブルクォーテーションではじまる
+        # ワードの場合のみエスケープ処理を施す
+        for word in split_statement:
+            search_objs = ["^'.+'$", '^".+"$']
+            if self.dnr.is_matched(line=word, search_objs=search_objs):
+                word = self.escape(word[1:-1])
+                word = "'" + word + "'"
+            list_escaped.append(word)
+        # 最後に1つの文字列に連結してリターン.
+        return ' '.join(list_escaped)
+
+    def escape(self, value: str):
+        """SQLステートメントのパラメータ部分のエスケープをする.
+
+        Args:
+            param1 value: エスケープ対象の文字列.
+
+        Returns:
+            エスケープ後の文字列.
+        """
+        if value is None:
+            return value
+        if isinstance(value, (bytes, bytearray)):
+            value = value.replace(b'\\', b'\\\\')
+            value = value.replace(b'\n', b'\\n')
+            value = value.replace(b'\r', b'\\r')
+            value = value.replace(b'\047', b'\134\047')  # single quotes
+            value = value.replace(b'\042', b'\134\042')  # double quotes
+            value = value.replace(b'\032', b'\134\032')  # for Win32
+        else:
+            value = value.replace('\\', '\\\\')
+            value = value.replace('\n', '\\n')
+            value = value.replace('\r', '\\r')
+            value = value.replace('\047', '\134\047')  # single quotes
+            value = value.replace('\042', '\134\042')  # double quotes
+            value = value.replace('\032', '\134\032')  # for Win32
+        return value
