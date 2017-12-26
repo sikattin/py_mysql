@@ -76,6 +76,8 @@ class ExcSql(object):
             sqls = self.dnr.read_text_file(dir_path=dir_path, encode=w_encoding)
             # 読み込んだ結果を実行する.
             for sql in sqls:
+                # エスケープ処理
+                sql = mysqldb.escape_statement(sql)
                 # トランザクション状態を管理.
                 # トランザクション中 かつ COMMIT を実行する前に確認処理に移る.
                 if mysqldb.is_transacted and 'COMMIT' in sql.upper():
@@ -143,6 +145,7 @@ class ExcSql(object):
                 # 入力ファイルからSQL文の抽出
                 cfm_sqls = self.dnr.read_text_file(r'{}'.format(r_dir_path), encode=r_encoding)
                 for single_sql in cfm_sqls:
+                    single_sql = mysqldb.escapestatement(single_sql)
                     result = mysqldb.execute_sql(single_sql)
                     # fetchall() is Returning a list of tuples. [(), (), (), ...]
                     rows = result.fetchall()
@@ -232,6 +235,7 @@ class ExcSql(object):
             mysql.connector.ProgrammingError:
         """
         cfm_sql = input(msg_no.call_msg())
+        cfm_sql = mysqldb.escapestatement(cfm_sql)
         while True:
             try:
                 result = mysqldb.execute_sql(cfm_sql)
