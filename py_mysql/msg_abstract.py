@@ -83,7 +83,7 @@ class Msg9(MsgAbstract):
     """
     """
     def call_msg(self):
-        return 'SQL文をファイルから読み込んで一括で実行します。読み込むファイルのパスを指定してください。: '
+        return 'SQL文をファイルから読み込んで一括で実行します。ファイルのパスを指定: '
 
 class Msg10(MsgAbstract):
     """
@@ -101,7 +101,7 @@ class Msg12(MsgAbstract):
     """
     """
     def call_msg(self):
-        return "実行結果を書き込むファイルのパスを指定 ex.. /var/log/aaa.log"
+        return "実行結果を書き込むファイル名を指定."
 
 class Msg13(MsgAbstract):
     """
@@ -120,17 +120,35 @@ class Msg15(MsgAbstract):
     """
     def call_msg(self):
         return "このままCOMMITする場合は 1 , ROLLBACKする場合は 2 を入力してください。:"
+
+
 class Msg16(MsgAbstract):
     """
     """
     def call_msg(self):
         return __file__ + "is ended."
 
+
 class Msg17(MsgAbstract):
     """
     """
     def call_msg(self):
         return "このまま次の命令の実行に進むには 1 , プログラムを終了するには 2 を入力してください。"
+
+
+class Msg18(MsgAbstract):
+    """
+    """
+    def call_msg(self):
+        return "トランザクション処理中です。クエリ実行に移る前に確認用のSQL文を実行しますか？"
+
+
+class Msg19(MsgAbstract):
+    """
+    """
+    def call_msg(self):
+        return "トランザクション処理中です。処理完了前に確認用のSQL文を実行しますか？"
+
 
 def main():
     pass

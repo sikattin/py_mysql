@@ -34,6 +34,7 @@ class MySQLDB(object):
         self.port = port
         self._conn = None
         self._cur = None
+        self._autocommit = False
 
         # 初期化時にDBに接続する.
         self.connect(self.host, self.dst_db, self.myuser, self.mypass, self.port)
@@ -77,13 +78,15 @@ class MySQLDB(object):
                     host=hostname,
                     port=port_num)
             if self._conn.is_connected():
-                self._cur = self._conn.cursor()
+                self._cur = self._conn.cursor(buffered=True)
+                self.autocommit_on()
                 return self
         else:
             if self._conn.is_connected():
                 print("DB名：{} への接続成功.".format(self.dst_db))
                 # カーソルの取得
-                self._cur = self._conn.cursor()
+                self._cur = self._conn.cursor(buffered=True)
+                self.autocommit_on()
                 return self
 
     def close(self):
@@ -134,6 +137,24 @@ class MySQLDB(object):
         """returns the last executed statement as a string."""
         return self._cur.statement
 
+    def autocommit_on(self):
+        """autocommitをONにセットする."""
+        self._conn.autocommit = True
+        self._autocommit = self._conn.autocommit
+        self._cur = self._conn.cursor(buffered=True)
+        return print("autocommit = {}".format(self._autocommit))
+
+    def autocommit_off(self):
+        """autocommitをOFFにセットする."""
+        self._conn.autocommit = False
+        self._autocommit = self._conn.autocommit
+        self._cur = self._conn.cursor(buffered=True)
+        return print("autocommit = {}".format(self._autocommit))
+
+    def get_autocommit(self):
+        """return autocommit value."""
+        return self._autocommit
+
     def execute_sql(self, sql: str, params=None):
         """SQL文の実行をする.
 
@@ -167,7 +188,7 @@ class MySQLDB(object):
 
         トランザクション処理中ならばTrueを返す.
         """
-        return self._conn.in_transaction()
+        return self._conn.in_transaction
 
     def escape_statement(self, sql: str):
         """引数で渡された文字列をエスケープして返す.
@@ -219,3 +240,30 @@ class MySQLDB(object):
             value = value.replace('\042', '\134\042')  # double quotes
             value = value.replace('\032', '\134\032')  # for Win32
         return value
+
+    def get_dbtable(self):
+        """データベース名とテーブル名の一覧を取得する.
+
+            Returns:
+                データベース名とテーブル名を対応させた辞書.
+                {'db1': (db1_table1, db1_table2, ...), 'db2': (db2_table1, ...)}
+        """
+        results = {}
+        # SHOW DATABASES;
+        sql = self.escape_statement("SHOW DATABASES;")
+        cur_showdb = self.execute_sql(sql)
+        for db_name in cur_showdb.fetchall():
+            for db_str in db_name:
+                # information_schema と peformance_schema DBはバックアップ対象から除外.
+                if db_str.lower() in {'information_schema', 'performance_schema'}:
+                    continue
+                # DBに接続する.
+                self.change_database(db_str)
+                # SHOW TABLES;
+                sql = self.escape_statement("SHOW TABLES;")
+                cur_showtb = self.execute_sql(sql)
+                for table_name in cur_showtb.fetchall():
+                    for table_str in table_name:
+                        # 辞書にキーとバリューの追加.
+                        results.setdefault(db_str, []).append(table_str)
+        return results

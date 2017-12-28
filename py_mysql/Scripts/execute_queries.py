@@ -56,6 +56,8 @@ class ExcSql(object):
         self.msg14 = msg_abstract.Msg14()
         self.msg15 = msg_abstract.Msg15()
         self.msg17 = msg_abstract.Msg17()
+        self.msg18 = msg_abstract.Msg18()
+        self.msg19 = msg_abstract.Msg19()
 
         self.dnr = delete_null_row.DeleteNullRow()
 
@@ -71,6 +73,8 @@ class ExcSql(object):
         # エラー発生命令を格納しておくタプル.
         err_list = tuple()
         with MySQLDB(self.host, self.dst_db, self.myuser, self.mypass, self.port) as mysqldb:
+            # autocommitをONにしておく.
+            mysqldb.autocommit_on()
             # ファイルオープン検査.
             dir_path, w_encoding = self._read_io_file(mode='r')
             # SQL文をファイルから読み込む.
@@ -79,10 +83,9 @@ class ExcSql(object):
             for sql in sqls:
                 # エスケープ処理
                 sql_escape = mysqldb.escape_statement(sql)
-                # トランザクション状態を管理.
                 # トランザクション中 かつ COMMIT を実行する前に確認処理に移る.
-                if mysqldb.is_transacted and 'COMMIT' in sql.upper():
-                    self._confirm_before_commit(mysqldb, self.dnr)
+                if mysqldb.is_transacted() and 'COMMIT' in sql.upper():
+                    self._confirm_before_commit(mysqldb, self.dnr, self.msg19)
                 # トランザクション処理終了前の確認処理ここまで.
                     # 確認処理の後、このままCOMMITするか、ロールバックするかを尋ねる.
                     ans = self._input_int_answer(self.msg15)
@@ -118,9 +121,12 @@ class ExcSql(object):
                     else:
                         print("プログラムを終了します。\n")
                         raise
-            # Connector/Python経由での接続はデフォルトでオートコミットがオフ
-            # なのですべての命令文が正常終了した場合は明示的にコミットさせる.
-            mysqldb.commit()
+                else:
+                    # トランザクション処理開始前の確認.
+                    if mysqldb.is_transacted() and sql_escape.upper() in {'BEGIN;',
+                                                                          'START TRANSACTION;'}:
+                        self._confirm_before_commit(mysqldb, self.dnr, self.msg18)
+                        input("プログラムを再開するには何かを入力してください。: ")
 
         print(__file__ + ' is ended.')
 
@@ -140,7 +146,8 @@ class ExcSql(object):
         print("\n==========================================\n")
 
     def _confirm_before_commit(self, mysqldb: MySQLDB,
-                                dnr: delete_null_row.DeleteNullRow):
+                                dnr: delete_null_row.DeleteNullRow,
+                                msg=None):
         """トランザクション処理を終える前の一連の確認用処理をするメソッド.
 
         Args:
@@ -150,7 +157,9 @@ class ExcSql(object):
         Returns:
             Not returns values.
         """
-        print("トランザクション処理中です。処理完了前に確認用のSQL文を実行しますか？")
+        if msg is None:
+            msg = "non input message."
+        print(msg.call_msg())
         ans = self._input_int_answer(self.msg1)
         if ans == 1:
             print(self.msg4.call_msg())
@@ -172,8 +181,17 @@ class ExcSql(object):
                 # 入力ファイルからSQL文の抽出
                 cfm_sqls = self.dnr.read_text_file(r'{}'.format(r_dir_path), encode=r_encoding)
                 for single_sql in cfm_sqls:
-                    single_sql = mysqldb.escapestatement(single_sql)
-                    result = mysqldb.execute_sql(single_sql)
+                    single_sql = mysqldb.escape_statement(single_sql)
+                    try:
+                        result = mysqldb.execute_sql(single_sql)
+                    except mysql.connector.Error as e:
+                        self._error_process(e, single_sql)
+                        ans = self._input_int_answer(self.msg17)
+                        if ans == 1:
+                            continue
+                        else:
+                            print("プログラムを終了します。\n")
+                            raise
                     # fetchall() is Returning a list of tuples. [(), (), (), ...]
                     rows = result.fetchall()
                     exc_statement = single_sql + ":\n"
