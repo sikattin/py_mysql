@@ -85,6 +85,8 @@ class DeleteNullRow:
         Returns:
             パターンにマッチしたならTrue そうでないならFalseを返す.
         """
+        if not isinstance(search_objs, list):
+            search_objs = [search_objs]
         for search_obj in search_objs:
             match_obj = re.match(r'{}'.format(search_obj), line)
             if match_obj is not None:

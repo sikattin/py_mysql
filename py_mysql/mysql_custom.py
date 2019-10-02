@@ -1,4 +1,4 @@
-#-------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------
 # Name:        muysql_custom.py
 # Purpose:     MySQL謹製のmysql-connector-pythonのラッパークラス
 # を実装したモジュール.
@@ -8,7 +8,7 @@
 # Created:     08/12/2017
 # Copyright:   shikano.takeki 2017
 # Licence:     <your licence>
-#-------------------------------------------------------------------------------
+# -------------------------------------------------------------------------------
 # -*- coding: utf-8 -*-
 import mysql.connector
 from py_mysql.delete_null_row import DeleteNullRow
@@ -17,7 +17,11 @@ from getpass import getpass
 
 class MySQLDB(object):
     """MySQL謹製のmysql-connector-pythonのラッパークラス"""
-    def __init__(self, host:str, dst_db: str, myuser: str, mypass: str, port: int):
+    def __init__(self, host: str,
+                 dst_db: str,
+                 myuser: str,
+                 mypass: str,
+                 port: int):
         """コンストラクタ.
 
         各種初期化を行う.
@@ -55,17 +59,22 @@ class MySQLDB(object):
         if not self.is_connect:
             print("DB接続をクローズしました。")
 
-    def connect(self, host: str, dest_db: str, myuser: str, mypass: str, port:int):
+    def connect(self,
+                host: str,
+                dest_db: str,
+                myuser: str,
+                mypass: str,
+                port: int):
         """MySQL接続用関数.
 
         """
         try:
             self._conn = mysql.connector.connect(user=self.myuser,
-                password=self.mypass,
-                database=self.dst_db,
-                host=self.host,
-                port=self.port)
-        except mysql.connector.errors.ProgrammingError as e1:
+                                                 password=self.mypass,
+                                                 database=self.dst_db,
+                                                 host=self.host,
+                                                 port=self.port)
+        except mysql.connector.Error as e1:
             print("正確なアカウント情報、DB名を指定してください。")
             hostname = input("hostname: ")
             username = input("user: ")
@@ -73,10 +82,10 @@ class MySQLDB(object):
             database = input("destination_db: ")
             port_num = input("Port: ")
             self._conn = mysql.connector.connect(user=username,
-                    password=password,
-                    database=database,
-                    host=hostname,
-                    port=port_num)
+                                                 password=password,
+                                                 database=database,
+                                                 host=hostname,
+                                                 port=port_num)
             if self._conn.is_connected():
                 self._cur = self._conn.cursor(buffered=True)
                 self.autocommit_on()
@@ -129,6 +138,14 @@ class MySQLDB(object):
         """カーソルを取得する."""
         return self._cur
 
+    def set_cursor_params(self, **options):
+        """カーソルオブジェクトのオプションを設定する
+        
+        Args:
+            **options: Cursor object paramaters
+        """
+        self._cur = self._conn.cursor(buffered=True, **options)
+        
     def change_database(self, db: str):
         """接続先のデータベースを変更する."""
         self._conn.database = db
@@ -142,14 +159,12 @@ class MySQLDB(object):
         self._conn.autocommit = True
         self._autocommit = self._conn.autocommit
         self._cur = self._conn.cursor(buffered=True)
-        return print("autocommit = {}".format(self._autocommit))
 
     def autocommit_off(self):
         """autocommitをOFFにセットする."""
         self._conn.autocommit = False
         self._autocommit = self._conn.autocommit
         self._cur = self._conn.cursor(buffered=True)
-        return print("autocommit = {}".format(self._autocommit))
 
     def get_autocommit(self):
         """return autocommit value."""
@@ -159,7 +174,11 @@ class MySQLDB(object):
         """SQL文の実行をする.
 
         :param sql: 実行するクエリ、コマンド
-        :param params: 割り当て用のパラメータ 要タプル型"""
+        :param params: 割り当て用のパラメータ 要タプル型
+
+        Raises:
+            mysql.connector.Error
+        """
         # 接続確認
         if not self.is_connect:
             self.connect(self.host, self.dst_db, self.myuser, self.mypass, self.port)
@@ -174,7 +193,7 @@ class MySQLDB(object):
                     params = tuple(params)
                     if not isinstance(params, tuple):
                         raise ValueError("割り当てパラメータはタプル型でなければなりません。")
-                self._cur.execute(sql)
+                self._cur.execute(sql, params)
         except mysql.connector.Error as e:
             raise e
         else:
