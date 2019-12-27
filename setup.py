@@ -1,6 +1,5 @@
 # -*- coding: utf-8 -*-
 
-# Learn more: https://github.com/kennethreitz/setup.py
 
 from setuptools import setup, find_packages
 
@@ -16,10 +15,10 @@ requires = ['mysql-connector-python']
 setup(
     name='py_mysql',
     version='1.0',
-    description='Operating Mysql for Python.',
+    description='MySQL operation module',
     long_description=readme,
     author='Takeki Shikano',
-    author_email='shikano.takeki@nexon.co.jp',
+    author_email='',
     url=None,
     license='MIT',
     packages=find_packages(exclude=('tests', 'docs')),

@@ -1,13 +1,12 @@
 # -------------------------------------------------------------------------------
 # Name:        muysql_custom.py
-# Purpose:     MySQL謹製のmysql-connector-pythonのラッパークラス
-# を実装したモジュール.
+# Purpose:     mysql-connector-python wrapper module
 #
 # Author:      shikano.takeki
 #
 # Created:     08/12/2017
 # Copyright:   shikano.takeki 2017
-# Licence:     <your licence>
+# Licence:     MIT
 # -------------------------------------------------------------------------------
 # -*- coding: utf-8 -*-
 import mysql.connector
@@ -16,19 +15,21 @@ from getpass import getpass
 
 
 class MySQLDB(object):
-    """MySQL謹製のmysql-connector-pythonのラッパークラス"""
+    """MySQL connector class"""
     def __init__(self, host: str,
                  dst_db: str,
                  myuser: str,
                  mypass: str,
-                 port: int):
-        """コンストラクタ.
+                 port: int,
+                 **cur_opts):
+        """constructor
 
         各種初期化を行う.
-        :param host: データベースの接続ホスト.
-        :param dst_db: 接続先のデータベース名.
-        :param myuser: 接続するユーザー名.
-        :param mypass: 接続するユーザのパスワード.
+        :param host: database hostname/ip
+        :param dst_db: database name
+        :param myuser: user name
+        :param mypass: password for user name
+        :param port: mysql server port
         """
         self.dnr = DeleteNullRow()
         self.host = host
@@ -36,19 +37,19 @@ class MySQLDB(object):
         self.myuser = myuser
         self.mypass = mypass
         self.port = port
+        self.cur_opts = cur_opts
         self._conn = None
         self._cur = None
         self._autocommit = False
 
-        # 初期化時にDBに接続する.
         self.connect(self.host, self.dst_db, self.myuser, self.mypass, self.port)
 
     def __enter__(self):
-        """コンテキストマネージャ実装のため."""
+        """context manager"""
         return self
 
     def __exit__(self, exc_type, exc_val, exc_tb):
-        """コンテキストマネージャ実装のため.
+        """context manager
 
         :param exc_type:
         :param exc_val:
@@ -65,8 +66,14 @@ class MySQLDB(object):
                 myuser: str,
                 mypass: str,
                 port: int):
-        """MySQL接続用関数.
-
+        """connect to mysql server.
+        
+            Args:
+                host: database hostname/ip
+                dest_db: database name to connect
+                myuser: user name
+                mypass: password for user name
+                port: mysql server port
         """
         try:
             self._conn = mysql.connector.connect(user=self.myuser,
@@ -87,14 +94,14 @@ class MySQLDB(object):
                                                  host=hostname,
                                                  port=port_num)
             if self._conn.is_connected():
-                self._cur = self._conn.cursor(buffered=True)
+                self._cur = self._conn.cursor(buffered=True, **self.cur_opts)
                 self.autocommit_on()
                 return self
         else:
             if self._conn.is_connected():
                 print("DB名：{} への接続成功.".format(self.dst_db))
                 # カーソルの取得
-                self._cur = self._conn.cursor(buffered=True)
+                self._cur = self._conn.cursor(buffered=True, **self.cur_opts)
                 self.autocommit_on()
                 return self
 
@@ -131,11 +138,11 @@ class MySQLDB(object):
         return self._cur.fetchall()
 
     def is_connect(self) -> bool:
-        """データベースへの接続状況を教えてくれる."""
+        """check connection status."""
         return self._conn.is_connected()
 
     def get_cursor(self):
-        """カーソルを取得する."""
+        """get current db cursor"""
         return self._cur
 
     def set_cursor_params(self, **options):
@@ -144,11 +151,13 @@ class MySQLDB(object):
         Args:
             **options: Cursor object paramaters
         """
-        self._cur = self._conn.cursor(buffered=True, **options)
-        
+        self.cur_opts = options
+        self._cur = self._conn.cursor(buffered=True, **self.cur_opts)
+
     def change_database(self, db: str):
         """接続先のデータベースを変更する."""
         self._conn.database = db
+        self._cur = self._conn.cursor(buffered=True, **self.cur_opts)
 
     def get_statement(self):
         """returns the last executed statement as a string."""
@@ -158,13 +167,13 @@ class MySQLDB(object):
         """autocommitをONにセットする."""
         self._conn.autocommit = True
         self._autocommit = self._conn.autocommit
-        self._cur = self._conn.cursor(buffered=True)
+        self._cur = self._conn.cursor(buffered=True, **self.cur_opts)
 
     def autocommit_off(self):
         """autocommitをOFFにセットする."""
         self._conn.autocommit = False
         self._autocommit = self._conn.autocommit
-        self._cur = self._conn.cursor(buffered=True)
+        self._cur = self._conn.cursor(buffered=True, **self.cur_opts)
 
     def get_autocommit(self):
         """return autocommit value."""
